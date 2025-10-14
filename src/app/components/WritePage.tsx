@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "../../../lib/supabaseClient";
+import Image from "next/image";
 
 export default function WritePage() {
   const [nickname, setNickname] = useState("");
@@ -73,7 +74,7 @@ export default function WritePage() {
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-gray-200 overflow-hidden flex items-center justify-center">
                 {profileImage ? (
-                  <img
+                  <Image
                     src={profileImage}
                     alt="프로필"
                     className="w-full h-full object-cover"

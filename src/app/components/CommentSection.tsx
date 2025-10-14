@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 
+import Image from "next/image";
+
 interface Comment {
   id: number;
   nickname: string;
@@ -66,7 +68,7 @@ export default function CommentSection({
             <div key={comment.id} className="flex gap-3">
               <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                 {comment.profileImage ? (
-                  <img
+                  <Image
                     src={comment.profileImage}
                     alt={comment.nickname}
                     className="w-8 h-8 rounded-full object-cover"
