@@ -14,9 +14,12 @@ interface Comment {
 interface CommentSectionProps {
   postId: number;
   comments: Comment[];
-  onAddComment?: (postId: number, nickname: string, content: string) => void;
+  onAddComment?: (
+    postId: number,
+    nickname: string,
+    content: string
+  ) => Promise<void>;
 }
-
 export default function CommentSection({
   postId,
   comments,
