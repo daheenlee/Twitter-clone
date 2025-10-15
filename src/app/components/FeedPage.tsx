@@ -146,35 +146,6 @@ const handleLike = async (postId: number) => {
     console.error("Like error:", error);
   }
 };
-  const handleAddComment = (
-    postId: number,
-    nickname: string,
-    content: string
-  ) => {
-    try {
-      const newComment = {
-        id: Date.now(),
-        nickname,
-        content,
-        timestamp: "방금 전",
-      };
-
-      setPosts((prev) =>
-        prev.map((post) =>
-          post.id === postId
-            ? {
-                ...post,
-                comments: post.comments + 1,
-                commentList: [...post.commentList, newComment],
-              }
-            : post
-        )
-      );
-    } catch (error) {
-      console.error("Add comment error:", error);
-    }
-  };
-
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
       {/* 헤더 */}
