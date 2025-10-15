@@ -117,18 +117,35 @@ export default function FeedPage() {
 
   if (loading) return <div>Loading...</div>;
 
-  const handleLike = (postId: number) => {
-    try {
-      setPosts((prev) =>
-        prev.map((post) =>
-          post.id === postId ? { ...post, likes: post.likes + 1 } : post
-        )
-      );
-    } catch (error) {
-      console.error("Like error:", error);
-    }
-  };
+const handleLike = async (postId: number) => {
+  try {
+    // 현재 게시글 찾기
+    const currentPost = posts.find(post => post.id === postId);
+    if (!currentPost) return;
 
+    const newLikes = currentPost.likes + 1;
+
+    // Supabase 업데이트
+    const { error } = await supabase
+      .from("posts")
+      .update({ likes: newLikes })
+      .eq("id", postId);
+
+    if (error) {
+      console.error("좋아요 업데이트 실패:", error);
+      return;
+    }
+
+    // 화면 업데이트
+    setPosts(
+      posts.map((post) =>
+        post.id === postId ? { ...post, likes: newLikes } : post
+      )
+    );
+  } catch (error) {
+    console.error("Like error:", error);
+  }
+};
   const handleAddComment = (
     postId: number,
     nickname: string,
