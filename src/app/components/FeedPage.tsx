@@ -1,11 +1,10 @@
 "use client";
 
-import CommentSection from "./CommentSection";
+import CommentSection from "../components/CommentSection";
 import { useState, useEffect } from "react";
 import { supabase } from "../../../lib/supabaseClient";
 import Image from "next/image";
 
-// 🟢 댓글 타입
 interface Comment {
   id: number;
   nickname: string;
@@ -14,7 +13,6 @@ interface Comment {
   profile_image_url?: string;
 }
 
-// 🟢 Supabase에서 posts 테이블 + comments 테이블 join 시 반환될 구조
 interface SupabasePost {
   id: number;
   content: string;
@@ -25,7 +23,6 @@ interface SupabasePost {
   comments?: Comment[];
 }
 
-// 🟢 실제 화면에서 사용할 타입
 interface Post {
   id: number;
   content: string;
@@ -46,6 +43,57 @@ interface Post {
 export default function FeedPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // ✅ 댓글 등록 함수 (Supabase 저장 + 즉시 반영)
+  const handleAddComment = async (
+    postId: number,
+    nickname: string,
+    content: string
+  ) => {
+    try {
+      // 🔵 Supabase에 댓글 저장
+      const { data, error } = await supabase
+        .from("comments")
+        .insert([
+          {
+            post_id: postId,
+            nickname,
+            content,
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .select("*")
+        .single();
+
+      if (error) throw error;
+
+      // 🟢 새 댓글 객체 변환
+      const newComment = {
+        id: data.id,
+        nickname: data.nickname,
+        content: data.content,
+        timestamp: data.created_at,
+        profileImage: data.profile_image_url || undefined,
+      };
+
+      // 🟢 posts state 업데이트 (즉시 반영)
+      setPosts((prevPosts) =>
+        prevPosts.map((post) =>
+          post.id === postId
+            ? {
+                ...post,
+                comments: post.comments + 1, // 댓글 수 증가
+                commentList: [...post.commentList, newComment],
+              }
+            : post
+        )
+      );
+
+      console.log("✅ 댓글 등록 성공:", newComment);
+    } catch (err) {
+      console.error("❌ 댓글 추가 실패:", err);
+    }
+  };
 
   useEffect(() => {
     async function fetchPosts() {
@@ -82,9 +130,6 @@ export default function FeedPage() {
       }
 
       if (data) {
-        console.log("🟡 받아온 데이터:", data);
-
-        // 🟢 타입 안전하게 변환
         const transformedData: Post[] = (data as SupabasePost[]).map(
           (post) => ({
             id: post.id,
@@ -105,7 +150,6 @@ export default function FeedPage() {
           })
         );
 
-        console.log("🟣 변환된 데이터:", transformedData);
         setPosts(transformedData);
       }
 
@@ -115,37 +159,33 @@ export default function FeedPage() {
     fetchPosts();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="text-center mt-10">Loading...</div>;
 
-const handleLike = async (postId: number) => {
-  try {
-    // 현재 게시글 찾기
-    const currentPost = posts.find(post => post.id === postId);
-    if (!currentPost) return;
+  // ✅ 좋아요 기능 그대로 유지
+  const handleLike = async (postId: number) => {
+    try {
+      const currentPost = posts.find((post) => post.id === postId);
+      if (!currentPost) return;
 
-    const newLikes = currentPost.likes + 1;
+      const newLikes = currentPost.likes + 1;
 
-    // Supabase 업데이트
-    const { error } = await supabase
-      .from("posts")
-      .update({ likes: newLikes })
-      .eq("id", postId);
+      const { error } = await supabase
+        .from("posts")
+        .update({ likes: newLikes })
+        .eq("id", postId);
 
-    if (error) {
-      console.error("좋아요 업데이트 실패:", error);
-      return;
+      if (error) throw error;
+
+      setPosts(
+        posts.map((post) =>
+          post.id === postId ? { ...post, likes: newLikes } : post
+        )
+      );
+    } catch (error) {
+      console.error("Like error:", error);
     }
+  };
 
-    // 화면 업데이트
-    setPosts(
-      posts.map((post) =>
-        post.id === postId ? { ...post, likes: newLikes } : post
-      )
-    );
-  } catch (error) {
-    console.error("Like error:", error);
-  }
-};
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen">
       {/* 헤더 */}
@@ -167,6 +207,7 @@ const handleLike = async (postId: number) => {
                     width={40}
                     height={40}
                     className="w-full h-full object-cover rounded-full"
+                    unoptimized
                   />
                 ) : (
                   post.author.charAt(0)
@@ -201,6 +242,7 @@ const handleLike = async (postId: number) => {
               </button>
             </div>
 
+            {/* 댓글 섹션 */}
             <CommentSection
               postId={post.id}
               comments={post.commentList}
