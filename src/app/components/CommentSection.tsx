@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+import { supabase } from "../../../lib/supabaseClient";
 import Image from "next/image";
 
 interface Comment {
@@ -15,7 +15,7 @@ interface Comment {
 interface CommentSectionProps {
   postId: number;
   comments: Comment[];
-  onAddComment: (postId: number, nickname: string, content: string) => void;
+  onAddComment?: (postId: number, nickname: string, content: string) => void;
 }
 
 export default function CommentSection({
@@ -29,39 +29,29 @@ export default function CommentSection({
   const [showForm, setShowForm] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nickname.trim() || !content.trim()) return;
+
+    setIsSubmitting(true);
+
     try {
-      e.preventDefault();
-      if (!nickname.trim() || !content.trim()) return;
+      // FeedPage에서 onAddComment 처리
+      await onAddComment?.(postId, nickname, content);
 
-      setIsSubmitting(true);
-
-      // 실제로는 API 호출을 여기서 할 것입니다
-      setTimeout(() => {
-        try {
-          onAddComment(postId, nickname.trim(), content.trim());
-          setNickname("");
-          setContent("");
-          setIsSubmitting(false);
-          setShowForm(false);
-        } catch (error) {
-          console.error("Comment submission error:", error);
-          setIsSubmitting(false);
-          alert("댓글 작성 중 오류가 발생했습니다.");
-        }
-      }, 500);
-    } catch (error) {
-      console.error("Form submission error:", error);
+      setNickname("");
+      setContent("");
+      setShowForm(false);
+    } catch (err) {
+      console.error("댓글 등록 실패:", err);
+    } finally {
       setIsSubmitting(false);
     }
   };
 
-  const getInitials = (name: string) => {
-    return name.charAt(0).toUpperCase();
-  };
+  const getInitials = (name: string) => name.charAt(0).toUpperCase();
 
   return (
     <div className="mt-4 border-t border-gray-100 pt-3">
-      {/* 댓글 목록 */}
       {comments.length > 0 && (
         <div className="mb-4 space-y-3">
           {comments.map((comment) => (
@@ -93,30 +83,15 @@ export default function CommentSection({
         </div>
       )}
 
-      {/* 댓글 작성 폼 토글 버튼 */}
       {!showForm && (
         <button
           onClick={() => setShowForm(true)}
           className="flex items-center gap-2 text-gray-500 hover:text-blue-500 transition-colors text-sm"
         >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
           댓글 달기
         </button>
       )}
 
-      {/* 댓글 작성 폼 */}
       {showForm && (
         <form onSubmit={handleSubmit} className="space-y-3">
           <div className="flex gap-3">
@@ -144,7 +119,6 @@ export default function CommentSection({
               />
             </div>
           </div>
-
           <div className="flex justify-end gap-2">
             <button
               type="button"
