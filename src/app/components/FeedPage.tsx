@@ -51,23 +51,20 @@ export default function FeedPage() {
     content: string
   ) => {
     try {
-      // 🔵 Supabase에 댓글 저장
+      // Supabase에 댓글 추가
       const { data, error } = await supabase
         .from("comments")
-        .insert([
-          {
-            post_id: postId,
-            nickname,
-            content,
-            created_at: new Date().toISOString(),
-          },
-        ])
-        .select("*")
+        .insert({
+          post_id: postId,
+          nickname,
+          content,
+        })
+        .select()
         .single();
 
       if (error) throw error;
 
-      // 🟢 새 댓글 객체 변환
+      // 새 댓글을 프론트에 즉시 반영
       const newComment = {
         id: data.id,
         nickname: data.nickname,
@@ -76,22 +73,20 @@ export default function FeedPage() {
         profileImage: data.profile_image_url || undefined,
       };
 
-      // 🟢 posts state 업데이트 (즉시 반영)
-      setPosts((prevPosts) =>
-        prevPosts.map((post) =>
+      // posts 상태 업데이트
+      setPosts((prev) =>
+        prev.map((post) =>
           post.id === postId
             ? {
                 ...post,
-                comments: post.comments + 1, // 댓글 수 증가
+                comments: post.comments + 1,
                 commentList: [...post.commentList, newComment],
               }
             : post
         )
       );
-
-      console.log("✅ 댓글 등록 성공:", newComment);
     } catch (err) {
-      console.error("❌ 댓글 추가 실패:", err);
+      console.error("댓글 추가 실패:", err);
     }
   };
 
